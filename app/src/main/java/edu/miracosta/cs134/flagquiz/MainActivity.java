@@ -2,12 +2,18 @@ package edu.miracosta.cs134.flagquiz;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.PreferenceManager;
 
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -20,6 +26,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.prefs.Preferences;
 
 import edu.miracosta.cs134.flagquiz.model.Country;
 import edu.miracosta.cs134.flagquiz.model.JSONLoader;
@@ -27,8 +34,14 @@ import edu.miracosta.cs134.flagquiz.model.JSONLoader;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "Flag Quiz";
-
+    public static final String REGIONS = "pref_regions"; //
+    public static final String CHOICES = "pref_numberOfChoices";
     private static final int FLAGS_IN_QUIZ = 10;
+
+    // Keep track of the current of choices
+    private int mChoices = 4;
+    // Keep track of the current region selected
+    private String mRegion = "All";
 
     private Button[] mButtons = new Button[4];
     private List<Country> mAllCountriesList;  // all the countries loaded from JSON
@@ -77,6 +90,9 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Error loading from JSON", e);
         }
 
+        // Attach preference listener
+        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(mSharedPreferenceChangeListener);
+
         // DONE: Call the method resetQuiz() to start the quiz.
         resetQuiz();
     }
@@ -102,10 +118,11 @@ public class MainActivity extends AppCompatActivity {
         while (mQuizCountriesList.size() < FLAGS_IN_QUIZ)
         {
             random = mAllCountriesList.get(rng.nextInt(mAllCountriesList.size()));
-            if (!mQuizCountriesList.contains(random)) // if random is not already in list, add it (duplicate check)
+            if ((!mQuizCountriesList.contains(random)) && (random.getRegion().equals(mRegion) || mRegion.equals("All"))) // if random is not already in list (duplicate check), and add it (duplicate check)
             {
                 mQuizCountriesList.add(random);
             }
+
         }
 
         // DONE: Ensure no duplicate countries (e.g. don't add a country if it's already in mQuizCountriesList)
@@ -113,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
         // DONE: Start the quiz by calling loadNextFlag
         loadNextFlag();
     }
+
 
     /**
      * Method initiates the process of loading the next flag for the quiz, showing
@@ -213,7 +231,23 @@ public class MainActivity extends AppCompatActivity {
                 // TODO: Nested in this decision, if the user has completed all 10 questions, show an AlertDialog
                 // TODO: with the statistics and an option to Reset Quiz
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setMessage(getString(R.string.results, mTotalGuesses, (double) mCorrectGuesses/mTotalGuesses));
+                builder.setMessage(getString(R.string.results, mTotalGuesses, 100 * (double) mCorrectGuesses/mTotalGuesses));
+
+                // Set the positive button of the dialog
+                // positive button means to reset the quiz
+                builder.setPositiveButton(getString(R.string.reset_quiz), new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i)
+                    {
+                        resetQuiz();
+                    }
+                });
+
+                builder.setCancelable(false); // done so user cant cancel out of dialog and be stuck at end of game
+
+                builder.create();
+                builder.show();
             }
         }
         // DONE (above): then display correct answer in green text.  Also, disable all 4 buttons (can't keep guessing once it's correct)
@@ -232,4 +266,56 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+        getMenuInflater().inflate(R.menu.menu_settings, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+        Intent settingsIntent = new Intent(this, SettingsActivity.class);
+        startActivity(settingsIntent);
+        return super.onOptionsItemSelected(item);
+    }
+
+    SharedPreferences.OnSharedPreferenceChangeListener
+            mSharedPreferenceChangeListener =
+            new SharedPreferences.OnSharedPreferenceChangeListener() {
+                @Override
+                public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+                                                      String key) {
+                    if (key.equals(REGIONS))
+                    {
+                        String region = sharedPreferences.getString(REGIONS,
+                                getString(R.string.default_region));
+                        updateRegion(region);
+                        resetQuiz();
+                    }
+                    else if (key.equals(CHOICES))
+                    {
+                        mChoices = Integer.parseInt(sharedPreferences.getString(CHOICES,
+                                getString(R.string.default_choices)));
+                        updateChoices();
+                        resetQuiz();
+                    }
+                    Toast.makeText(MainActivity.this, R.string.restarting_quiz,
+                            Toast.LENGTH_SHORT).show();
+                }
+            };
+
+    public void updateRegion(String region)
+    {
+        mRegion = region.replaceAll("_", " ");
+        // All, Africa, Europe, etc
+    }
+
+    public void updateChoices()
+    {
+
+    }
+
 }

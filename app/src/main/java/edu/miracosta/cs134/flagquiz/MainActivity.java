@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     // Keep track of the current region selected
     private String mRegion = "All";
 
-    private Button[] mButtons = new Button[4];
+    private Button[] mButtons = new Button[8];
     private List<Country> mAllCountriesList;  // all the countries loaded from JSON
     private List<Country> mQuizCountriesList; // countries in current quiz (just 10 of them)
     private Country mCorrectCountry; // correct country for the current question
@@ -76,6 +76,10 @@ public class MainActivity extends AppCompatActivity {
         mButtons[1] = findViewById(R.id.button2);
         mButtons[2] = findViewById(R.id.button3);
         mButtons[3] = findViewById(R.id.button4);
+        mButtons[4] = findViewById(R.id.button5);
+        mButtons[5] = findViewById(R.id.button6);
+        mButtons[6] = findViewById(R.id.button7);
+        mButtons[7] = findViewById(R.id.button8);
 
         // DONE: Set mQuestionNumberTextView's text to the appropriate strings.xml resource
         mQuestionNumberTextView.setText(getString(R.string.question, 1, FLAGS_IN_QUIZ));
@@ -92,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Attach preference listener
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(mSharedPreferenceChangeListener);
-
         // DONE: Call the method resetQuiz() to start the quiz.
         resetQuiz();
     }
@@ -103,7 +106,6 @@ public class MainActivity extends AppCompatActivity {
      */
     public void resetQuiz()
     {
-
         // DONE: Reset the number of correct guesses made
         mCorrectGuesses = 0;
 
@@ -138,6 +140,12 @@ public class MainActivity extends AppCompatActivity {
      */
     private void loadNextFlag()
     {
+        // Setting Buttons back to visible if had previously been made invisible
+        for (int i = 0; i < mButtons.length; i++)
+        {
+            mButtons[i].setVisibility(View.VISIBLE);
+        }
+
         // DONE: Initialize the mCorrectCountry by removing the item at position 0 in the mQuizCountries
         mCorrectCountry = mQuizCountriesList.remove(0);
 
@@ -167,8 +175,58 @@ public class MainActivity extends AppCompatActivity {
 
         // DONE: Shuffle the order of all the countries (use Collections.shuffle)
         Collections.shuffle(mAllCountriesList);
+        Log.i(TAG, "mChoices (load) 1: " + mChoices);
+
+        for (int i = 0; i < mChoices; i++)
+        {
+            mButtons[i].setEnabled(true); // making clickable
+            mButtons[i].setText(mAllCountriesList.get(i).getName());
+        }
+        Log.i(TAG, "mChoices (load) 2: " + mChoices);
+        // DONE: After the loop, randomly replace one of the buttons with the name of the correct country
+        int randIndex = rng.nextInt(mChoices);
+        mButtons[randIndex].setText(mCorrectCountry.getName());
+
+        for (int i = mChoices; i < mButtons.length; i++)
+        {
+            mButtons[i].setVisibility(View.GONE);
+        }
+        Log.i(TAG, "mChoices (load) 3: " + mChoices);
 
         // DONE: Loop through all 4 buttons, enable them all and set them to the first 4 countries
+        /*
+        if (mChoices == 2)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                mButtons[i].setEnabled(true); // making clickable
+                mButtons[i].setText(mAllCountriesList.get(i).getName());
+            }
+
+            int randIndex = rng.nextInt(2);
+            mButtons[randIndex].setText(mCorrectCountry.getName());
+
+            for (int i = 2; i < 8; i++)
+            {
+                mButtons[i].setVisibility(View.GONE);
+            }
+        }
+        else if (mChoices == 4)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                mButtons[i].setEnabled(true); // making clickable
+                mButtons[i].setText(mAllCountriesList.get(i).getName());
+            }
+
+            int randIndex = rng.nextInt(2);
+            mButtons[randIndex].setText(mCorrectCountry.getName());
+
+            for (int i = 2; i < 8; i++)
+            {
+                mButtons[i].setVisibility(View.GONE);
+            }
+        }
         for (int i = 0; i < mButtons.length; i++)
         {
             mButtons[i].setEnabled(true); // making clickable
@@ -176,10 +234,8 @@ public class MainActivity extends AppCompatActivity {
         }
         // DONE (above): in the all countries list
 
+         */
 
-        // DONE: After the loop, randomly replace one of the 4 buttons with the name of the correct country
-        int randIndex = rng.nextInt(mButtons.length);
-        mButtons[randIndex].setText(mCorrectCountry.getName());
     }
 
     /**
@@ -292,14 +348,16 @@ public class MainActivity extends AppCompatActivity {
                     {
                         String region = sharedPreferences.getString(REGIONS,
                                 getString(R.string.default_region));
+                        Log.i(TAG, "region (pref): " + region);
                         updateRegion(region);
                         resetQuiz();
                     }
                     else if (key.equals(CHOICES))
                     {
-                        mChoices = Integer.parseInt(sharedPreferences.getString(CHOICES,
+                        int choice = Integer.parseInt(sharedPreferences.getString(CHOICES,
                                 getString(R.string.default_choices)));
-                        updateChoices();
+                        Log.i(TAG, "mChoices (pref): " + mChoices);
+                        updateChoices(choice);
                         resetQuiz();
                     }
                     Toast.makeText(MainActivity.this, R.string.restarting_quiz,
@@ -313,9 +371,10 @@ public class MainActivity extends AppCompatActivity {
         // All, Africa, Europe, etc
     }
 
-    public void updateChoices()
+    public void updateChoices(int choice)
     {
-
+        mChoices = choice;
     }
+
 
 }

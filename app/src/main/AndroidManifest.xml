@@ -17,6 +17,7 @@
                 android:value="edu.miracosta.cs134.flagquiz.MainActivity" />
         </activity>
         <activity android:name=".MainActivity"
+            android:configChanges="orientation|screenSize"
             android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
